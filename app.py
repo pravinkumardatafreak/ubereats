@@ -1,10 +1,23 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import os
 
 # ============================================
-# DATABASE CONNECTION
+# DATABASE CONNECTION / SETUP
 # ============================================
+if not os.path.exists('ubereats.db'):
+    st.warning('Database ubereats.db not found. Creating from Uber_Eats_data.csv ...')
+    if os.path.exists('Uber_Eats_data.csv'):
+        df = pd.read_csv('Uber_Eats_data.csv')
+        conn_init = sqlite3.connect('ubereats.db')
+        df.to_sql('restaurants', conn_init, if_exists='replace', index=False)
+        conn_init.close()
+        st.success('Database created successfully.')
+    else:
+        st.error('Uber_Eats_data.csv is missing. Please add this file to the app folder.')
+        st.stop()
+
 conn = sqlite3.connect('ubereats.db')
 
 # ============================================
