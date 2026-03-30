@@ -25,5 +25,5 @@
 - Q&A Analysis: selectable queries for location, cuisine, cost/rating metrics
 - Orders Analysis: revenue by payment, discount, day, restaurant, month
 
-> Final note: Project is complete and ready for handoff or demo.
+> Final note: Project is complete and ready for live evaluation.
 
