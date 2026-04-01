@@ -35,16 +35,3 @@ If `orders.json` is missing, the pipeline creates **sample** order rows so the O
 - **Business:** 1–2 actions from your tables (e.g. where to onboard partners, price segment insight).
 
 Submit this repo in ZEN as required by the course.
-
-## Study guide (PDF)
-
-Deep preparation for viva and written explanation:
-
-- **`docs/PROJECT_FULL_GUIDE.pdf`** — read this end-to-end (also `docs/PROJECT_FULL_GUIDE.md` on GitHub).
-
-To regenerate the PDF after editing the Markdown:
-
-```bash
-pip install markdown xhtml2pdf
-python scripts/generate_guide_pdf.py
-```
