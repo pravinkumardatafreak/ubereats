@@ -1,24 +1,28 @@
-import streamlit as st
-import pandas as pd
-import sqlite3
 import os
+import sqlite3
+
+import pandas as pd
+import streamlit as st
+
+from pipeline import DEFAULT_CSV, DEFAULT_DB, ensure_database
 
 # ============================================
 # DATABASE CONNECTION / SETUP
 # ============================================
-if not os.path.exists('ubereats.db'):
-    st.warning('Database ubereats.db not found. Creating from Uber_Eats_data.csv ...')
-    if os.path.exists('Uber_Eats_data.csv'):
-        df = pd.read_csv('Uber_Eats_data.csv')
-        conn_init = sqlite3.connect('ubereats.db')
-        df.to_sql('restaurants', conn_init, if_exists='replace', index=False)
-        conn_init.close()
-        st.success('Database created successfully.')
-    else:
-        st.error('Uber_Eats_data.csv is missing. Please add this file to the app folder.')
-        st.stop()
+if os.path.isfile(DEFAULT_CSV):
+    ensure_database()
+elif not os.path.isfile(DEFAULT_DB):
+    st.error(
+        "Uber_Eats_data.csv is missing. Add it to the app folder or run create_db.py "
+        "after restoring the dataset."
+    )
+    st.stop()
 
-conn = sqlite3.connect('ubereats.db')
+if not os.path.isfile(DEFAULT_DB):
+    st.error("Database could not be initialized.")
+    st.stop()
+
+conn = sqlite3.connect(DEFAULT_DB)
 
 # ============================================
 # SIDEBAR NAVIGATION
@@ -72,28 +76,29 @@ if page == "🏠 Dashboard":
             step=0.1
         )
     
-    # --- BUILD SQL DYNAMICALLY ---
+    # --- BUILD SQL (parameterized) ---
+    clauses = ["rate >= ?"]
+    params: list = [selected_rate]
+    if selected_location != "All":
+        clauses.append("location = ?")
+        params.append(selected_location)
+    if selected_online != "All":
+        clauses.append("online_order = ?")
+        params.append(selected_online)
+    if selected_booking != "All":
+        clauses.append("book_table = ?")
+        params.append(selected_booking)
     query = """
-        SELECT name, location, cuisines, rate, 
+        SELECT name, location, cuisines, rate,
                votes, online_order, book_table,
                approx_cost_fortwo, restaurant_type
         FROM restaurants
-        WHERE rate >= {}
-    """.format(selected_rate)
-    
-    if selected_location != "All":
-        query += " AND location = '{}'".format(selected_location)
-    
-    if selected_online != "All":
-        query += " AND online_order = '{}'".format(selected_online)
-        
-    if selected_booking != "All":
-        query += " AND book_table = '{}'".format(selected_booking)
-    
-    query += " ORDER BY rate DESC"
-    
-    # --- DISPLAY RESULTS ---
-    df_filtered = pd.read_sql_query(query, conn)
+        WHERE """ + " AND ".join(
+        clauses
+    ) + """
+        ORDER BY rate DESC
+    """
+    df_filtered = pd.read_sql_query(query, conn, params=params)
     st.markdown(f"### 📊 Results: {len(df_filtered)} restaurants found")
     st.dataframe(df_filtered)
 
@@ -113,7 +118,12 @@ elif page == "❓ Q&A Analysis":
         "Q7 - Most Common Cuisines",
         "Q8 - Highest Rated Cuisines",
         "Q9 - Niche Cuisine Opportunities",
-        "Q10 - Cost vs Rating"
+        "Q10 - Cost vs Rating",
+        "Q11 - Premium Onboarding Locations",
+        "Q12 - High Demand Low Rating Areas",
+        "Q13 - Online + Table Booking Bundle",
+        "Q14 - Multi-Factor Location Success",
+        "Q15 - Top Restaurants by Price Segment",
     ])
     
     queries = {
@@ -191,7 +201,78 @@ elif page == "❓ Q&A Analysis":
             FROM restaurants
             GROUP BY cost_category
             ORDER BY avg_cost ASC
-        """
+        """,
+        "Q11 - Premium Onboarding Locations": """
+            SELECT location,
+                ROUND(AVG(rate),2) as avg_rating,
+                ROUND(AVG(approx_cost_fortwo),2) as avg_cost,
+                COUNT(name) as restaurant_count
+            FROM restaurants
+            WHERE approx_cost_fortwo >= 700
+            GROUP BY location
+            HAVING COUNT(name) >= 3 AND AVG(rate) >= 4.0
+            ORDER BY avg_rating DESC, avg_cost DESC
+            LIMIT 15
+        """,
+        "Q12 - High Demand Low Rating Areas": """
+            WITH agg AS (
+                SELECT location, COUNT(name) AS cnt, AVG(rate) AS avg_r
+                FROM restaurants GROUP BY location
+            )
+            SELECT location, cnt AS total_restaurants,
+                ROUND(avg_r, 2) AS avg_rating
+            FROM agg
+            WHERE cnt > (SELECT AVG(cnt) FROM agg)
+              AND avg_r < (SELECT AVG(rate) FROM restaurants)
+            ORDER BY cnt DESC
+            LIMIT 15
+        """,
+        "Q13 - Online + Table Booking Bundle": """
+            SELECT CASE
+                WHEN online_order = 'Yes' AND book_table = 'Yes' THEN 'Both Yes'
+                ELSE 'Other'
+            END AS segment,
+            ROUND(AVG(rate),2) AS avg_rating,
+            COUNT(*) AS total_restaurants
+            FROM restaurants
+            GROUP BY segment
+        """,
+        "Q14 - Multi-Factor Location Success": """
+            SELECT location,
+                ROUND(AVG(rate),2) AS avg_rating,
+                ROUND(AVG(approx_cost_fortwo),2) AS avg_cost,
+                ROUND(100.0 * SUM(CASE WHEN online_order = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_online,
+                ROUND(100.0 * SUM(CASE WHEN book_table = 'Yes' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_book_table,
+                COUNT(name) AS restaurants
+            FROM restaurants
+            GROUP BY location
+            HAVING COUNT(name) >= 5
+            ORDER BY avg_rating DESC, pct_online DESC
+            LIMIT 15
+        """,
+        "Q15 - Top Restaurants by Price Segment": """
+            WITH r AS (
+                SELECT name, location,
+                    CASE
+                        WHEN approx_cost_fortwo < 500 THEN 'Low'
+                        WHEN approx_cost_fortwo BETWEEN 500 AND 800 THEN 'Mid'
+                        ELSE 'Premium'
+                    END AS price_segment,
+                    rate,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY CASE
+                            WHEN approx_cost_fortwo < 500 THEN 'Low'
+                            WHEN approx_cost_fortwo BETWEEN 500 AND 800 THEN 'Mid'
+                            ELSE 'Premium'
+                        END
+                        ORDER BY rate DESC
+                    ) AS rn
+                FROM restaurants
+            )
+            SELECT name, location, price_segment, rate
+            FROM r WHERE rn <= 5
+            ORDER BY price_segment, rate DESC
+        """,
     }
     
     if st.button("🔍 Run Analysis"):

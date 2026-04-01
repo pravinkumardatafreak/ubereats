@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local database (rebuild with: python create_db.py)
+ubereats.db
+
+# Dataset files — keep local; add to project folder before running (not required in GitHub)
+Uber_Eats_data.csv
+orders.json
+Order_json.json
+order_data.json
