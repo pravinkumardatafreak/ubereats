@@ -1,15 +1,17 @@
 # Uber Eats Bangalore — Restaurant Intelligence (Guvi capstone)
 
-Streamlit + SQLite: **tables only** (no charts). Dashboard filters, **15** restaurant Q&A queries, **6** order queries.
+I started this in **Google Colab** (`ubereats_py.ipynb`, `order_json.ipynb`): cleaning the CSV, splitting cuisines for analysis, building a **score** (rating × log(1 + votes)), loading orders from JSON into SQLite. This repo is the same work moved into **scripts + Streamlit** so it is easy to run and submit.
 
-## Data files (put them in this folder)
+**What you get:** Streamlit app, **tables only** (no charts). Dashboard filters + **15** restaurant questions + **6** order questions, all backed by SQL.
 
-Copy from your machine, e.g. Downloads:
+## Data files (same as in Colab)
+
+Put in this folder:
 
 - `Uber_Eats_data.csv`
-- `orders.json` (list of orders; `order_date` is turned into `day_of_week` and `month` in `pipeline.py` for SQL)
+- `orders.json` (optional — if missing, sample orders are generated so the Orders page still runs)
 
-Then:
+## Run
 
 ```bash
 pip install -r requirements.txt
@@ -17,21 +19,18 @@ python create_db.py
 streamlit run app.py
 ```
 
-## What each main file does
+## What I did in code (short)
 
-| File | Role |
-|------|------|
-| `pipeline.py` | ETL: clean CSV → `restaurants`; load JSON → `orders` (+ date fields for analytics) |
-| `create_db.py` | Runs the pipeline and builds `ubereats.db` |
-| `app.py` | Streamlit UI + SQL (parameterized filters on Dashboard) |
+| Piece | What |
+|--------|------|
+| `pipeline.py` | Drop `phone` / `listed_in(city)`, **drop duplicate rows**, rename cost columns, build **`cuisine_exploded`** (split cuisines), **`restaurant_scores`** (score for Q15), **`orders`** from JSON + weekday/month from `order_date` |
+| `create_db.py` | Creates / refreshes `ubereats.db` |
+| `app.py` | Streamlit + SQL; dashboard filters use **parameterised** queries |
 
-If `orders.json` is missing, the pipeline creates **sample** order rows so the Orders page still runs (explain that in evaluation if you demo without real JSON).
+## Viva pointers
 
-## Viva in one minute
+- **EDA:** row counts before/after dedupe, rating and cost cleaning, cuisine split vs full string.  
+- **Stats:** e.g. chi-square (online order vs high/low rating) — explain why.  
+- **Q15:** score rewards both rating and vote volume so busy places are not ignored.
 
-- **Domain:** food-delivery marketplace analytics.  
-- **EDA:** rows/columns, missing values, rating and cost cleaning, what you found on locations/cuisines.  
-- **Stats:** one test (e.g. chi-square: online order vs high/low rating) + why you picked it.  
-- **Business:** 1–2 actions from your tables (e.g. where to onboard partners, price segment insight).
-
-Submit this repo in ZEN as required by the course.
+Submit the **GitHub repo link** in ZEN as the course asks.

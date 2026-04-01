@@ -1,7 +1,6 @@
-"""
-Shared ETL for restaurants CSV and optional orders JSON / synthetic seed.
-Used by create_db.py and app.py so schema stays consistent.
-"""
+# ETL for Uber Eats capstone — builds SQLite tables used by create_db.py and Streamlit.
+# Cleaning + cuisine split + score table follow what I prototyped in ubereats_py.ipynb (Colab).
+
 from __future__ import annotations
 
 import json
@@ -18,6 +17,7 @@ ORDER_JSON_CANDIDATES = ("orders.json", "Order_json.json", "order_data.json")
 
 
 def clean_restaurants(df: pd.DataFrame) -> pd.DataFrame:
+    """Same steps as my notebook: fix rate/cost, drop unused cols, remove duplicate rows."""
     df = df.copy()
     df["rate"] = df["rate"].astype(str).str.replace("/5", "", regex=False)
     df["rate"] = pd.to_numeric(df["rate"], errors="coerce")
@@ -27,15 +27,41 @@ def clean_restaurants(df: pd.DataFrame) -> pd.DataFrame:
     df[cost_col] = df[cost_col].astype(str).str.replace(",", "", regex=False)
     df[cost_col] = pd.to_numeric(df[cost_col], errors="coerce")
 
+    # Not needed for SQL questions — dropped these in Colab too
+    for col in ("phone", "listed_in(city)"):
+        if col in df.columns:
+            df = df.drop(columns=[col])
+
+    df = df.drop_duplicates(keep="first")
+
     df.rename(
         columns={
             "approx_cost(for two people)": "approx_cost_fortwo",
             "listed_in(type)": "restaurant_type",
-            "listed_in(city)": "city",
         },
         inplace=True,
     )
     return df
+
+
+def build_cuisine_exploded(df: pd.DataFrame) -> pd.DataFrame:
+    """Split comma-separated cuisines (one row per cuisine tag) — used for Q7–Q9 in SQL."""
+    base = df.dropna(subset=["cuisines"]).copy()
+    out = base.assign(cuisine=base["cuisines"].str.split(",")).explode("cuisine")
+    out["cuisine"] = out["cuisine"].str.strip()
+    out = out[out["cuisine"].astype(str).str.len() > 0]
+    return out[["cuisine", "name", "location", "rate"]]
+
+
+def build_restaurant_scores(df: pd.DataFrame) -> pd.DataFrame:
+    """score = avg_rating * log(1 + total_votes) — my Q15 logic from the notebook."""
+    g = df.groupby(["name", "location", "cuisines", "approx_cost_fortwo"], as_index=False).agg(
+        avg_rating=("rate", "mean"),
+        total_votes=("votes", "sum"),
+    )
+    g = g[g["total_votes"] > 50]
+    g["score"] = np.round(g["avg_rating"] * np.log1p(g["total_votes"]), 2)
+    return g
 
 
 def _find_orders_json() -> Optional[str]:
@@ -46,18 +72,17 @@ def _find_orders_json() -> Optional[str]:
 
 
 def _enrich_orders_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Real orders JSON uses order_date; SQL needs day_of_week + month (feature engineering)."""
     if df.empty or "order_date" not in df.columns:
         return df
     out = df.copy()
     dt = pd.to_datetime(out["order_date"], errors="coerce")
     out["day_of_week"] = dt.dt.day_name()
+    # short month label (Jan, Feb) — matches order_json.ipynb style after I standardised
     out["month"] = dt.dt.strftime("%b")
     return out
 
 
 def load_orders_df(restaurant_names: pd.Series) -> pd.DataFrame:
-    """Load orders from JSON if present; otherwise synthetic seed for demo."""
     path = _find_orders_json()
     if path:
         with open(path, "r", encoding="utf-8") as f:
@@ -120,29 +145,32 @@ def load_orders_df(restaurant_names: pd.Series) -> pd.DataFrame:
     )
 
 
-def build_database(
-    csv_path: str = DEFAULT_CSV,
-    db_path: str = DEFAULT_DB,
-) -> None:
+REQUIRED_TABLES = frozenset(
+    {"restaurants", "orders", "cuisine_exploded", "restaurant_scores"}
+)
+
+
+def build_database(csv_path: str = DEFAULT_CSV, db_path: str = DEFAULT_DB) -> None:
     if not os.path.isfile(csv_path):
         raise FileNotFoundError(f"Missing dataset: {csv_path}")
 
     df = pd.read_csv(csv_path)
     df = clean_restaurants(df)
 
+    cuisine_x = build_cuisine_exploded(df)
+    scores = build_restaurant_scores(df)
+
     conn = sqlite3.connect(db_path)
     df.to_sql("restaurants", conn, if_exists="replace", index=False)
+    cuisine_x.to_sql("cuisine_exploded", conn, if_exists="replace", index=False)
+    scores.to_sql("restaurant_scores", conn, if_exists="replace", index=False)
 
     orders = load_orders_df(df["name"])
     orders.to_sql("orders", conn, if_exists="replace", index=False)
     conn.close()
 
 
-def ensure_database(
-    csv_path: str = DEFAULT_CSV,
-    db_path: str = DEFAULT_DB,
-) -> None:
-    """Create or repair DB so restaurants + orders exist with expected schema."""
+def ensure_database(csv_path: str = DEFAULT_CSV, db_path: str = DEFAULT_DB) -> None:
     if not os.path.isfile(csv_path):
         return
 
@@ -150,12 +178,10 @@ def ensure_database(
     if not need_full:
         conn = sqlite3.connect(db_path)
         cur = conn.cursor()
-        cur.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('restaurants','orders')"
-        )
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         found = {row[0] for row in cur.fetchall()}
         conn.close()
-        need_full = found != {"restaurants", "orders"}
+        need_full = not REQUIRED_TABLES.issubset(found)
 
     if need_full:
         build_database(csv_path=csv_path, db_path=db_path)

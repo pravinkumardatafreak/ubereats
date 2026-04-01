@@ -1,3 +1,6 @@
+# Guvi capstone — Streamlit talks to SQLite (tables only, no charts).
+# Q7–Q9 use cuisine_exploded; Q15 uses restaurant_scores — built in pipeline.py from my notebook logic.
+
 import os
 import sqlite3
 
@@ -6,9 +9,7 @@ import streamlit as st
 
 from pipeline import DEFAULT_CSV, DEFAULT_DB, ensure_database
 
-# ============================================
-# DATABASE CONNECTION / SETUP
-# ============================================
+# --- DB ---
 if os.path.isfile(DEFAULT_CSV):
     ensure_database()
 elif not os.path.isfile(DEFAULT_DB):
@@ -172,24 +173,29 @@ elif page == "❓ Q&A Analysis":
             ORDER BY avg_rating DESC
         """,
         "Q7 - Most Common Cuisines": """
-            SELECT cuisines, COUNT(name) as total_restaurants
-            FROM restaurants
-            GROUP BY cuisines
-            ORDER BY total_restaurants DESC LIMIT 10
+            SELECT cuisine, COUNT(*) as times_listed
+            FROM cuisine_exploded
+            GROUP BY cuisine
+            ORDER BY times_listed DESC
+            LIMIT 10
         """,
         "Q8 - Highest Rated Cuisines": """
-            SELECT cuisines, ROUND(AVG(rate),2) as avg_rating
-            FROM restaurants
-            GROUP BY cuisines
-            ORDER BY avg_rating DESC LIMIT 10
+            SELECT cuisine, ROUND(AVG(rate), 2) as avg_rating
+            FROM cuisine_exploded
+            GROUP BY cuisine
+            ORDER BY avg_rating DESC
+            LIMIT 10
         """,
         "Q9 - Niche Cuisine Opportunities": """
-            SELECT cuisines, ROUND(AVG(rate),2) as avg_rating,
-            COUNT(name) as total_restaurants
-            FROM restaurants
-            GROUP BY cuisines
-            HAVING AVG(rate) > 4.0 AND COUNT(name) < 10
-            ORDER BY avg_rating DESC LIMIT 10
+            SELECT cuisine,
+                ROUND(AVG(rate), 2) as avg_rating,
+                COUNT(DISTINCT name || '|' || location) as restaurant_count
+            FROM cuisine_exploded
+            GROUP BY cuisine
+            HAVING AVG(rate) > 4.0
+               AND COUNT(DISTINCT name || '|' || location) < 500
+            ORDER BY avg_rating DESC
+            LIMIT 10
         """,
         "Q10 - Cost vs Rating": """
             SELECT CASE 
@@ -204,15 +210,17 @@ elif page == "❓ Q&A Analysis":
         """,
         "Q11 - Premium Onboarding Locations": """
             SELECT location,
-                ROUND(AVG(rate),2) as avg_rating,
-                ROUND(AVG(approx_cost_fortwo),2) as avg_cost,
-                COUNT(name) as restaurant_count
+                ROUND(AVG(rate), 2) as avg_rating,
+                ROUND(AVG(approx_cost_fortwo), 2) as avg_cost,
+                ROUND(AVG(votes), 0) as avg_votes,
+                COUNT(name) as total_restaurants
             FROM restaurants
-            WHERE approx_cost_fortwo >= 700
             GROUP BY location
-            HAVING COUNT(name) >= 3 AND AVG(rate) >= 4.0
+            HAVING AVG(rate) > 4.0
+               AND AVG(approx_cost_fortwo) > 800
+               AND COUNT(name) > 10
             ORDER BY avg_rating DESC, avg_cost DESC
-            LIMIT 15
+            LIMIT 10
         """,
         "Q12 - High Demand Low Rating Areas": """
             WITH agg AS (
@@ -251,27 +259,28 @@ elif page == "❓ Q&A Analysis":
             LIMIT 15
         """,
         "Q15 - Top Restaurants by Price Segment": """
-            WITH r AS (
+            WITH ranked AS (
                 SELECT name, location,
                     CASE
                         WHEN approx_cost_fortwo < 500 THEN 'Low'
                         WHEN approx_cost_fortwo BETWEEN 500 AND 800 THEN 'Mid'
                         ELSE 'Premium'
                     END AS price_segment,
-                    rate,
+                    avg_rating, total_votes, score,
                     ROW_NUMBER() OVER (
                         PARTITION BY CASE
                             WHEN approx_cost_fortwo < 500 THEN 'Low'
                             WHEN approx_cost_fortwo BETWEEN 500 AND 800 THEN 'Mid'
                             ELSE 'Premium'
                         END
-                        ORDER BY rate DESC
+                        ORDER BY score DESC
                     ) AS rn
-                FROM restaurants
+                FROM restaurant_scores
             )
-            SELECT name, location, price_segment, rate
-            FROM r WHERE rn <= 5
-            ORDER BY price_segment, rate DESC
+            SELECT name, location, price_segment, avg_rating, total_votes, score
+            FROM ranked
+            WHERE rn <= 5
+            ORDER BY price_segment, score DESC
         """,
     }
     

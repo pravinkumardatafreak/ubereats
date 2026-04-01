@@ -1,6 +1,6 @@
-"""Build SQLite DB from CSV (and optional orders JSON). Run: python create_db.py"""
+# Run once after you add Uber_Eats_data.csv (and orders.json if you have it).
 from pipeline import build_database
 
 if __name__ == "__main__":
     build_database()
-    print("Clean database created successfully (restaurants + orders).")
+    print("Done: ubereats.db updated (restaurants, cuisine_exploded, restaurant_scores, orders).")
