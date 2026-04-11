@@ -97,7 +97,7 @@ pip install streamlit pandas
 ### Steps
 ```bash
 # 1. Clone repository
-git clone https://github.com/???/ubereats_project
+git clone https://github.com/pravinkumardatafreak/ubereats_project
 
 # 2. Add ubereats.db to project folder
 
