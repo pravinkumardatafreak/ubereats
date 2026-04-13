@@ -74,7 +74,7 @@ if page == "🏠 Dashboard":
     
     # --- BUILD SQL DYNAMICALLY ---
     query = """
-        SELECT name, location, cuisines, rate, 
+        SELECT DISTINCT name, location, cuisines, rate, 
                votes, online_order, book_table,
                approx_cost_fortwo, restaurant_type
         FROM restaurants
@@ -226,11 +226,24 @@ elif page == "📦 Orders Analysis":
             FROM orders GROUP BY discount_used
         """,
         "OQ3 - Revenue by Day": """
-            SELECT day_of_week, COUNT(*) as total_orders,
-            ROUND(SUM(order_value),2) as total_revenue
-            FROM orders GROUP BY day_of_week
-            ORDER BY total_revenue DESC
-        """,
+    SELECT 
+        CASE strftime('%w', order_date)
+            WHEN '0' THEN 'Sunday'
+            WHEN '1' THEN 'Monday'
+            WHEN '2' THEN 'Tuesday'
+            WHEN '3' THEN 'Wednesday'
+            WHEN '4' THEN 'Thursday'
+            WHEN '5' THEN 'Friday'
+            WHEN '6' THEN 'Saturday'
+        END as day_of_week,
+        COUNT(*) as total_orders,
+        ROUND(SUM(order_value),2) as total_revenue,
+        ROUND(AVG(order_value),2) as avg_order_value
+    FROM orders
+    GROUP BY day_of_week
+    ORDER BY total_revenue DESC
+         """,
+
         "OQ4 - Top Restaurants by Revenue": """
             SELECT restaurant_name, COUNT(*) as total_orders,
             ROUND(SUM(order_value),2) as total_revenue
@@ -238,11 +251,27 @@ elif page == "📦 Orders Analysis":
             ORDER BY total_revenue DESC LIMIT 10
         """,
         "OQ5 - Monthly Revenue": """
-            SELECT month, COUNT(*) as total_orders,
-            ROUND(SUM(order_value),2) as total_revenue
-            FROM orders GROUP BY month
-            ORDER BY total_revenue DESC
-        """,
+    SELECT 
+        CASE strftime('%m', order_date)
+            WHEN '01' THEN 'January'
+            WHEN '02' THEN 'February'
+            WHEN '03' THEN 'March'
+            WHEN '04' THEN 'April'
+            WHEN '05' THEN 'May'
+            WHEN '06' THEN 'June'
+            WHEN '07' THEN 'July'
+            WHEN '08' THEN 'August'
+            WHEN '09' THEN 'September'
+            WHEN '10' THEN 'October'
+            WHEN '11' THEN 'November'
+            WHEN '12' THEN 'December'
+        END as month,
+        COUNT(*) as total_orders,
+        ROUND(SUM(order_value),2) as total_revenue
+    FROM orders
+    GROUP BY month
+    ORDER BY total_revenue DESC
+         """,
         "OQ6 - Payment + Discount Combined": """
             SELECT payment_method, discount_used,
             COUNT(*) as total_orders,
