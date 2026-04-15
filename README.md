@@ -62,20 +62,6 @@ ubereats_project/
 
 ## ❓ Business Questions Answered
 
-### Restaurant Analysis (Q1-Q10)
-| Q# | Question | Key Finding |
-|---|---|---|
-| Q1 | Highest rated locations | Lavelle Road (4.21) |
-| Q2 | Over-saturated locations | Koramangala 5th (1213) |
-| Q3 | Online ordering impact | Minimal (3.92 vs 3.99) |
-| Q4 | Table booking impact | Significant (4.18 vs 3.83) |
-| Q5 | Best price range | Premium wins |
-| Q6 | Price segment performance | Premium > Mid > Low |
-| Q7 | Most common cuisines | North Indian (7164) |
-| Q8 | Highest rated cuisines | Cantonese (4.6) |
-| Q9 | Niche opportunities | Belgian, Cantonese |
-| Q10 | Cost vs Rating | Higher cost = higher rating |
-
 ### Orders Analysis
 | Q# | Question | Key Finding |
 |---|---|---|
