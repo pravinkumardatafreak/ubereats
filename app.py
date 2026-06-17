@@ -188,11 +188,20 @@ st.markdown(
     }
     .security-item {
         font-size: 12px !important;
-        margin-bottom: 8px !important;
+        margin-bottom: 10px !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         gap: 8px !important;
         color: #B0BFC6 !important;
+    }
+    .security-sub {
+        font-size: 10px !important;
+        color: #8C9CA5 !important;
+        display: block !important;
+        margin-left: 18px !important;
+        line-height: 1.3 !important;
+        font-weight: 400 !important;
+        margin-top: 2px !important;
     }
     .check-mark {
         color: #06C167 !important;
@@ -277,19 +286,49 @@ page = st.sidebar.radio(
     ["🏠 Restaurant Search", "❓ Business Q&A Hub", "📦 Orders Intelligence"],
 )
 
+# Sidebar helper card detailing active page function to improve understandability
+st.sidebar.markdown("<br/>", unsafe_allow_html=True)
+if page == "🏠 Restaurant Search":
+    st.sidebar.info(
+        "🔍 **Explorer Mode**:\nQuick search by name, filter by location, ratings, online delivery, and booking availability."
+    )
+elif page == "❓ Business Q&A Hub":
+    st.sidebar.info(
+        "📈 **Market Q&A**:\n10 core business questions solved via backend SQL groupings, rates, and niche distributions."
+    )
+elif page == "📦 Orders Intelligence":
+    st.sidebar.info(
+        "💰 **Sales Metrics**:\nSales trends, seasonal monthly reports, payment channel revenues, and discount impacts."
+    )
+
 st.sidebar.markdown("---")
 
-# Styled security status card in the sidebar
+# Styled security status card in the sidebar with descriptive micro-explanations
 st.sidebar.markdown(
     """
     <div class="security-card">
         <div class="security-header">
             <span class="security-icon">🛡️</span>
-            <span>Security Protocol Active</span>
+            <span>Security Status Active</span>
         </div>
-        <div class="security-item"><span class="check-mark">✓</span> Input Sanitization: Enabled</div>
-        <div class="security-item"><span class="check-mark">✓</span> Query Parameterization: Active</div>
-        <div class="security-item"><span class="check-mark">✓</span> Connection Pooling: Managed</div>
+        <div class="security-item">
+            <div>
+                <span class="check-mark">✓</span> <b>Input Sanitization</b>
+                <span class="security-sub">Blocks malicious characters and wildcards to safeguard queries.</span>
+            </div>
+        </div>
+        <div class="security-item">
+            <div>
+                <span class="check-mark">✓</span> <b>Query Parameterization</b>
+                <span class="security-sub">Executes SQL via safe placeholders (?) to neutralize Injection attacks.</span>
+            </div>
+        </div>
+        <div class="security-item">
+            <div>
+                <span class="check-mark">✓</span> <b>Resource Managers</b>
+                <span class="security-sub">Utilizes "with" statements to automatically close database connection streams.</span>
+            </div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
