@@ -66,7 +66,7 @@ def get_filtered_restaurants(
         pd.DataFrame: Cleaned and filtered DataFrame.
     """
     query = """
-        SELECT name, location, cuisines, rate, 
+        SELECT DISTINCT name, location, cuisines, rate, 
                votes, online_order, book_table,
                approx_cost_fortwo, restaurant_type
         FROM restaurants

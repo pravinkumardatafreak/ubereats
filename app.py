@@ -367,7 +367,7 @@ if page == "🏠 Restaurant Search":
             """
         )
         safe_sql_template = """
-        SELECT name, location, cuisines, rate, votes, online_order, book_table, approx_cost_fortwo
+        SELECT DISTINCT name, location, cuisines, rate, votes, online_order, book_table, approx_cost_fortwo, restaurant_type
         FROM restaurants
         WHERE rate >= ?
         """
