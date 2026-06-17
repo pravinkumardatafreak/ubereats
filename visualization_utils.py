@@ -28,15 +28,17 @@ def render_metric_cards(df: pd.DataFrame, context: str = "restaurants"):
         df (pd.DataFrame): The data used to compute metrics.
         context (str): The dataset context ('restaurants' or 'orders').
     """
-    if df.empty:
-        return
-
     cols = st.columns(3)
 
     if context == "restaurants":
-        total_restaurants = len(df)
-        avg_rate = df["rate"].mean() if "rate" in df.columns else 0
-        avg_cost = df["approx_cost_fortwo"].mean() if "approx_cost_fortwo" in df.columns else 0
+        if df.empty:
+            total_restaurants = 0
+            avg_rate = 0.0
+            avg_cost = 0.0
+        else:
+            total_restaurants = len(df)
+            avg_rate = df["rate"].mean() if "rate" in df.columns else 0
+            avg_cost = df["approx_cost_fortwo"].mean() if "approx_cost_fortwo" in df.columns else 0
 
         with cols[0]:
             st.metric(
@@ -47,20 +49,25 @@ def render_metric_cards(df: pd.DataFrame, context: str = "restaurants"):
         with cols[1]:
             st.metric(
                 label="Average Rating",
-                value=f"{avg_rate:.2f} ⭐" if avg_rate else "N/A",
+                value=f"{avg_rate:.2f} ⭐" if avg_rate > 0 else "N/A",
                 help="Mean rating score across the matching subset",
             )
         with cols[2]:
             st.metric(
                 label="Avg Cost for Two",
-                value=f"₹{avg_cost:.2f}" if avg_cost else "N/A",
+                value=f"₹{avg_cost:.2f}" if avg_cost > 0 else "N/A",
                 help="Mean cost for two people",
             )
 
     elif context == "orders":
-        total_orders = len(df)
-        total_revenue = df["order_value"].sum() if "order_value" in df.columns else 0
-        avg_order = df["order_value"].mean() if "order_value" in df.columns else 0
+        if df.empty:
+            total_orders = 0
+            total_revenue = 0.0
+            avg_order = 0.0
+        else:
+            total_orders = len(df)
+            total_revenue = df["order_value"].sum() if "order_value" in df.columns else 0
+            avg_order = df["order_value"].mean() if "order_value" in df.columns else 0
 
         with cols[0]:
             st.metric(

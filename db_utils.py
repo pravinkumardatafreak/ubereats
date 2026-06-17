@@ -10,6 +10,9 @@ import sqlite3
 import pandas as pd
 
 
+import streamlit as st
+
+
 def run_query(query: str, params: tuple = ()) -> pd.DataFrame:
     """Execute a read query securely using parameterized syntax and return a DataFrame.
 
@@ -32,6 +35,7 @@ def run_query(query: str, params: tuple = ()) -> pd.DataFrame:
         raise RuntimeError(f"Database query failed: {e}") from e
 
 
+@st.cache_data
 def get_unique_locations() -> list:
     """Retrieve the sorted list of distinct locations.
 

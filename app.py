@@ -335,13 +335,17 @@ if page == "🏠 Restaurant Search":
         selected_rate = st.slider("⭐ Minimum Rating Score", 1.0, 5.0, 3.0, 0.1)
 
     # Fetch Data Securely
-    df_filtered = db_utils.get_filtered_restaurants(
-        min_rating=selected_rate,
-        location=selected_location,
-        online_order=selected_online,
-        book_table=selected_booking,
-        search_name=search_name,
-    )
+    try:
+        df_filtered = db_utils.get_filtered_restaurants(
+            min_rating=selected_rate,
+            location=selected_location,
+            online_order=selected_online,
+            book_table=selected_booking,
+            search_name=search_name,
+        )
+    except Exception as e:
+        st.error(f"⚠️ Failed to query restaurants: {e}")
+        st.stop()
 
     # Display Metrics Summary
     st.markdown("### 📊 Metrics Overview")
@@ -564,7 +568,11 @@ elif page == "❓ Business Q&A Hub":
         st.session_state.qa_selected = selected_q
 
     if st.button("🔍 Run Analysis", type="primary"):
-        st.session_state.qa_result = db_utils.run_query(sql)
+        try:
+            st.session_state.qa_result = db_utils.run_query(sql)
+        except Exception as e:
+            st.error(f"⚠️ Failed to execute query: {e}")
+            st.session_state.qa_result = None
 
     if st.session_state.qa_result is not None:
         df_result = st.session_state.qa_result
@@ -783,7 +791,11 @@ elif page == "📦 Orders Intelligence":
         st.session_state.order_selected = selected_oq
 
     if st.button("🔍 Run Analysis", type="primary"):
-        st.session_state.order_result = db_utils.run_query(sql)
+        try:
+            st.session_state.order_result = db_utils.run_query(sql)
+        except Exception as e:
+            st.error(f"⚠️ Failed to execute query: {e}")
+            st.session_state.order_result = None
 
     if st.session_state.order_result is not None:
         df_result = st.session_state.order_result
