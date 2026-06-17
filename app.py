@@ -106,25 +106,6 @@ st.markdown(
         box-shadow: 0 2px 6px rgba(6, 193, 103, 0.2) !important;
     }
     
-    /* Interactive card styling for Checkboxes */
-    div[data-testid="stCheckbox"] {
-        background-color: #F8F9FA;
-        padding: 12px 18px;
-        border-radius: 8px;
-        border: 1px solid #E0E0E0;
-        transition: all 0.3s ease;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-    div[data-testid="stCheckbox"]:hover {
-        border-color: #06C167;
-        background-color: #F0FAF5;
-        box-shadow: 0 3px 10px rgba(6, 193, 103, 0.08);
-    }
-    div[data-testid="stCheckbox"] label {
-        font-weight: 600 !important;
-        color: #2C3E50 !important;
-    }
-    
     /* Ensure st.image aligns center in columns */
     div.stImage > img {
         display: block;
@@ -216,6 +197,15 @@ st.markdown(
     .check-mark {
         color: #06C167 !important;
         font-weight: 800 !important;
+    }
+    
+    /* Custom styling for details select slider */
+    div[data-testid="stSelectSlider"] {
+        background-color: #F8F9FA;
+        padding: 15px 25px;
+        border-radius: 10px;
+        border: 1px solid #E0E0E0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     }
     
     /* Info container styling */
@@ -577,26 +567,6 @@ elif page == "❓ Business Q&A Hub":
     if st.session_state.qa_result is not None:
         df_result = st.session_state.qa_result
 
-        st.markdown("---")
-        st.markdown("### 📊 Interactive Control Panel")
-        
-        # Interactive themed option cards using images
-        col_t1, col_t2, col_t3 = st.columns(3)
-        with col_t1:
-            if os.path.exists("assets/menu_receipt_data.png"):
-                st.image("assets/menu_receipt_data.png", width=100)
-            show_raw = st.checkbox("📋 Show Menu Sheet (Raw Data)", value=False)
-        with col_t2:
-            if os.path.exists("assets/sql_recipe_book.png"):
-                st.image("assets/sql_recipe_book.png", width=100)
-            show_sql = st.checkbox("💻 Show Cooking Recipe (SQL Code)", value=False)
-        with col_t3:
-            if os.path.exists("assets/chef_intelligence_brain.png"):
-                st.image("assets/chef_intelligence_brain.png", width=100)
-            show_theory = st.checkbox("🧠 Show Chef Intelligence (DS Theory)", value=True)
-
-        st.markdown("---")
-        
         # Plot matching chart
         st.markdown("### 📈 Visual Presentation")
         if chart_type == "bar_loc_rating":
@@ -623,44 +593,70 @@ elif page == "❓ Business Q&A Hub":
         elif chart_type == "scatter_cost_rating":
             vu.plot_cost_vs_rating(df_result)
 
-        # Handle Toggles
-        if show_raw:
-            st.markdown("### 📋 Menu Sheet (Raw Query Result)")
-            st.dataframe(df_result, use_container_width=True)
+        st.markdown("---")
+        st.markdown("### 🛠️ Analysis View Selector")
+        
+        # Premium Horizontal Select Slider representing presentation slides/pages
+        view_choice = st.select_slider(
+            "Slide to change details view:",
+            options=["Menu Sheet (Raw Data)", "Cooking Recipe (SQL)", "Chef Intelligence (DS Theory)"],
+            value="Chef Intelligence (DS Theory)"
+        )
+        
+        st.markdown("---")
 
-        if show_sql:
-            st.markdown("### 💻 SQL Cooking Recipe")
-            st.code(sql, language="sql")
+        # Dynamically display structured layouts based on slide/page selection
+        if view_choice == "Menu Sheet (Raw Data)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/menu_receipt_data.png"):
+                    st.image("assets/menu_receipt_data.png", width=110)
+            with col_data:
+                st.markdown("#### 📋 Menu Sheet (Raw Query Result)")
+                st.dataframe(df_result, use_container_width=True)
 
-        if show_theory:
-            # Data Science theory section
-            st.markdown("### 🧠 Chef Intelligence (Data Science Theory)")
-            if "Impact" in selected_q:
-                st.markdown(
-                    """
-                    **Theory Check - Correlation vs. Causation:**
-                    Providing value-added features like table bookings or online ordering correlates with higher average ratings. 
-                    However, this doesn't automatically cause higher satisfaction. Restaurants offering table booking are often premium 
-                    establishments with professional chefs, which naturally boost customer satisfaction.
-                    """
-                )
-            elif "Niche" in selected_q:
-                st.markdown(
-                    """
-                    **Theory Check - Market Opportunities:**
-                    In competitive markets, serving mainstream cuisines (e.g. North Indian or Chinese) puts you in direct competition 
-                    with thousands of outlets. Identifying high-rating cuisines with fewer competitors (niche) helps capture high-margin 
-                    customer subsets.
-                    """
-                )
-            else:
-                st.markdown(
-                    """
-                    **Theory Check - Segment Aggregations:**
-                    Using SQL groups (`GROUP BY`) allows us to bucket records to find statistical averages. This reveals overall system performance 
-                    rather than individual outlier behaviors.
-                    """
-                )
+        elif view_choice == "Cooking Recipe (SQL)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/sql_recipe_book.png"):
+                    st.image("assets/sql_recipe_book.png", width=110)
+            with col_data:
+                st.markdown("#### 💻 SQL Cooking Recipe")
+                st.code(sql, language="sql")
+
+        elif view_choice == "Chef Intelligence (DS Theory)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/chef_intelligence_brain.png"):
+                    st.image("assets/chef_intelligence_brain.png", width=110)
+            with col_data:
+                st.markdown("#### 🧠 Chef Intelligence (Data Science Theory)")
+                if "Impact" in selected_q:
+                    st.markdown(
+                        """
+                        **Theory Check - Correlation vs. Causation:**
+                        Providing value-added features like table bookings or online ordering correlates with higher average ratings. 
+                        However, this doesn't automatically cause higher satisfaction. Restaurants offering table booking are often premium 
+                        establishments with professional chefs, which naturally boost customer satisfaction.
+                        """
+                    )
+                elif "Niche" in selected_q:
+                    st.markdown(
+                        """
+                        **Theory Check - Market Opportunities:**
+                        In competitive markets, serving mainstream cuisines (e.g. North Indian or Chinese) puts you in direct competition 
+                        with thousands of outlets. Identifying high-rating cuisines with fewer competitors (niche) helps capture high-margin 
+                        customer subsets.
+                        """
+                    )
+                else:
+                    st.markdown(
+                        """
+                        **Theory Check - Segment Aggregations:**
+                        Using SQL groups (`GROUP BY`) allows us to bucket records to find statistical averages. This reveals overall system performance 
+                        rather than individual outlier behaviors.
+                        """
+                    )
 
 # ============================================
 # PAGE 3 - ORDERS INTELLIGENCE
@@ -800,26 +796,6 @@ elif page == "📦 Orders Intelligence":
     if st.session_state.order_result is not None:
         df_result = st.session_state.order_result
 
-        st.markdown("---")
-        st.markdown("### 📊 Interactive Control Panel")
-        
-        # Interactive themed option cards using images
-        col_t1, col_t2, col_t3 = st.columns(3)
-        with col_t1:
-            if os.path.exists("assets/menu_receipt_data.png"):
-                st.image("assets/menu_receipt_data.png", width=100)
-            show_raw = st.checkbox("📋 Show Order Receipts (Raw Data)", value=False)
-        with col_t2:
-            if os.path.exists("assets/sql_recipe_book.png"):
-                st.image("assets/sql_recipe_book.png", width=100)
-            show_sql = st.checkbox("💻 Show Cooking Recipe (SQL Code)", value=False)
-        with col_t3:
-            if os.path.exists("assets/chef_intelligence_brain.png"):
-                st.image("assets/chef_intelligence_brain.png", width=100)
-            show_theory = st.checkbox("🧠 Show Chef Intelligence (DS Theory)", value=True)
-
-        st.markdown("---")
-
         # Plot charts
         st.markdown("### 📈 Visual Presentation")
         if chart_type == "pie_payment":
@@ -835,39 +811,65 @@ elif page == "📦 Orders Intelligence":
         elif chart_type == "bar_combined":
             vu.plot_payment_discount_combined(df_result)
 
-        # Handle Toggles
-        if show_raw:
-            st.markdown("### 📋 Order Receipts (Raw Query Result)")
-            st.dataframe(df_result, use_container_width=True)
+        st.markdown("---")
+        st.markdown("### 🛠️ Analysis View Selector")
+        
+        # Premium Horizontal Select Slider representing presentation slides/pages
+        view_choice = st.select_slider(
+            "Slide to change details view:",
+            options=["Order Receipts (Raw Data)", "Cooking Recipe (SQL)", "Chef Intelligence (DS Theory)"],
+            value="Chef Intelligence (DS Theory)"
+        )
+        
+        st.markdown("---")
 
-        if show_sql:
-            st.markdown("### 💻 SQL Cooking Recipe")
-            st.code(sql, language="sql")
+        # Dynamically display structured layouts based on slide/page selection
+        if view_choice == "Order Receipts (Raw Data)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/menu_receipt_data.png"):
+                    st.image("assets/menu_receipt_data.png", width=110)
+            with col_data:
+                st.markdown("#### 📋 Order Receipts (Raw Query Result)")
+                st.dataframe(df_result, use_container_width=True)
 
-        if show_theory:
-            # Data Science theory section
-            st.markdown("### 🧠 Chef Intelligence (Data Science Theory)")
-            if "Discount" in selected_oq:
-                st.markdown(
-                    """
-                    **Theory Check - Incentives & Elasticity:**
-                    Discounts reduce immediate unit margins but increase the average basket size. If customers spend more per order when 
-                    using a discount, the volume effect might offset the lower margins.
-                    """
-                )
-            elif "Day" in selected_oq or "Month" in selected_oq:
-                st.markdown(
-                    """
-                    **Theory Check - Seasonality and Trends:**
-                    Time-series parsing (like `strftime` in SQLite) helps extract temporal patterns. E.g., showing weekend spikes or 
-                    mid-week slumps, which is critical for planning campaigns.
-                    """
-                )
-            else:
-                st.markdown(
-                    """
-                    **Theory Check - Joint Distributions:**
-                    Groupings by multiple features (e.g., payment type and discount utilization) reveal conditional interactions. 
-                    For instance, users paying by credit cards with discounts applied may represent the highest-margin transactions.
-                    """
-                )
+        elif view_choice == "Cooking Recipe (SQL)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/sql_recipe_book.png"):
+                    st.image("assets/sql_recipe_book.png", width=110)
+            with col_data:
+                st.markdown("#### 💻 SQL Cooking Recipe")
+                st.code(sql, language="sql")
+
+        elif view_choice == "Chef Intelligence (DS Theory)":
+            col_img, col_data = st.columns([1, 4])
+            with col_img:
+                if os.path.exists("assets/chef_intelligence_brain.png"):
+                    st.image("assets/chef_intelligence_brain.png", width=110)
+            with col_data:
+                st.markdown("#### 🧠 Chef Intelligence (Data Science Theory)")
+                if "Discount" in selected_oq:
+                    st.markdown(
+                        """
+                        **Theory Check - Incentives & Elasticity:**
+                        Discounts reduce immediate unit margins but increase the average basket size. If customers spend more per order when 
+                        using a discount, the volume effect might offset the lower margins.
+                        """
+                    )
+                elif "Day" in selected_oq or "Month" in selected_oq:
+                    st.markdown(
+                        """
+                        **Theory Check - Seasonality and Trends:**
+                        Time-series parsing (like `strftime` in SQLite) helps extract temporal patterns. E.g., showing weekend spikes or 
+                        mid-week slumps, which is critical for planning campaigns.
+                        """
+                    )
+                else:
+                    st.markdown(
+                        """
+                        **Theory Check - Joint Distributions:**
+                        Groupings by multiple features (e.g., payment type and discount utilization) reveal conditional interactions. 
+                        For instance, users paying by credit cards with discounts applied may represent the highest-margin transactions.
+                        """
+                    )
