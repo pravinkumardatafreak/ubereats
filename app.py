@@ -126,40 +126,6 @@ st.markdown(
         border-right: 1px solid #E2E8F0 !important;
     }
     
-    /* Elegant radio items structured as selector cards */
-    div[role="radiogroup"] {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 6px !important;
-    }
-    div[role="radiogroup"] label {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 12px 16px !important;
-        border-radius: 8px !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-        cursor: pointer !important;
-        border-left: 4px solid transparent !important;
-    }
-    div[role="radiogroup"] label:hover {
-        border-color: #06C167 !important;
-        background-color: #F8FFF9 !important;
-        box-shadow: 0 4px 12px rgba(6, 193, 103, 0.1) !important;
-        transform: translateX(4px) !important;
-    }
-    div[role="radiogroup"] label:has(input:checked) {
-        background-color: #E6F7ED !important;
-        border-color: #06C167 !important;
-        border-left: 4px solid #06C167 !important;
-        font-weight: 600 !important;
-        box-shadow: 0 4px 12px rgba(6, 193, 103, 0.15) !important;
-    }
-    /* Hide circular default pointers for button layout style */
-    div[role="radiogroup"] label [data-testid="stVisualCheckbox"] {
-        display: none !important;
-    }
-    
     /* Security glowing badge style */
     .security-card {
         background: linear-gradient(135deg, #1A252C 0%, #0F161A 100%) !important;
@@ -281,9 +247,11 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown("---")
 
-page = st.sidebar.radio(
-    "📍 SELECT ANALYTICS PAGE",
-    ["🏠 Restaurant Search", "❓ Business Q&A Hub", "📦 Orders Intelligence"],
+# Slider Navigation replacing standard radio buttons (circles/checkboxes)
+page = st.sidebar.select_slider(
+    "📖 SELECT ACTIVE PAGE",
+    options=["🏠 Restaurant Search", "❓ Business Q&A Hub", "📦 Orders Intelligence"],
+    value="🏠 Restaurant Search",
 )
 
 # Sidebar helper card detailing active page function to improve understandability
